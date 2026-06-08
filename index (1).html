@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Vortex Drive - Core Engine v7</title>
+    <!-- Tailwind CSS Premium -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icon Komplit -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #080c14;
+        }
+        .glass-panel {
+            background: rgba(12, 19, 34, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(6, 182, 212, 0.15);
+        }
+        .preview-backdrop {
+            background: rgba(4, 7, 12, 0.9);
+            backdrop-filter: blur(12px);
+        }
+        /* Scrollbar Halus kustom */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popUp {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-item {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .animate-popup {
+            animation: popUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .neon-pulse {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+            animation: pulseGlow 2s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.8); }
+            100% { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+        }
+    </style>
+</head>
+<body class="text-slate-200 font-sans w-full h-full flex flex-col overflow-hidden select-none pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+
+    <!-- TOP CONTROL PANEL (Navbar Atas) -->
+    <header class="w-full h-16 bg-[#0c1322] border-b border-cyan-950/40 flex items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="relative flex items-center justify-center">
+                <div class="absolute inset-0 bg-cyan-500 rounded-xl blur-md opacity-20 animate-pulse"></div>
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-2 rounded-xl text-black flex items-center justify-center shadow-lg relative z-10">
+                    <i class="fa-solid fa-circle-nodes text-md text-white"></i>
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-md sm:text-lg font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500">
+                    VORTEX<span class="text-white font-light tracking-normal ml-1">DRIVE</span>
+                </span>
+                <span class="text-[9px] text-cyan-400 font-mono tracking-widest -mt-0.5 uppercase">Security Matrix Enabled</span>
+            </div>
+        </div>
+        
+        <!-- Live Search Bar Desktop -->
+        <div class="w-full max-w-xl mx-8 hidden md:block">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 text-sm">
+                    <i class="fa-solid fa-terminal text-cyan-500/70"></i>
+                </span>
+                <input type="text" id="search-input" class="w-full bg-[#111a2e] text-slate-200 placeholder-slate-500 text-xs rounded-xl pl-10 pr-4 py-2.5 border border-cyan-950/60 focus:outline-none focus:border-cyan-500 transition duration-150" placeholder="Cari nama berkas di seluruh drive...">
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- Indikator System Notifikasi Latar Belakang -->
+            <button onclick="mintaIzinNotifikasiSistem()" id="btn-noti-status" class="w-8 h-8 bg-[#111a2e] text-slate-400 hover:text-cyan-400 border border-cyan-950 rounded-xl flex items-center justify-center transition" title="Allow Background Push">
+                <i class="fa-solid fa-bolt text-xs"></i>
+            </button>
+            <div class="text-right hidden sm:block">
+                <p class="text-xs font-bold tracking-wide text-slate-300">Ghathfan Dev</p>
+                <p class="text-[9px] text-cyan-400 font-mono uppercase tracking-wider flex items-center justify-end">
+                    <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full inline-block mr-1 shadow-[0_0_8px_#34d399]"></span>Idle Mode
+                </p>
+            </div>
+            <div class="w-9 h-9 bg-[#111a2e] border border-cyan-900/50 rounded-xl flex items-center justify-center font-bold text-cyan-400 shadow-inner">
+                <i class="fa-solid fa-shield-halved text-xs"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- FULL INTERFACE CONTAINER -->
+    <div class="w-full flex flex-1 overflow-hidden relative">
+        
+        <!-- SIDEBAR PANEL LEFT (Desktop Only) -->
+        <aside class="w-64 bg-[#0a0f1b] border-r border-cyan-950/20 p-4 flex flex-col justify-between hidden sm:flex flex-shrink-0">
+            <div class="space-y-6">
+                <div>
+                    <button id="btn-trigger-upload-desktop" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-150 flex items-center justify-center space-x-2 text-sm">
+                        <i class="fa-solid fa-file-import text-xs text-cyan-300"></i>
+                        <span>Inject New File</span>
+                    </button>
+                </div>
+
+                <!-- Navigasi Kategori Data Desktop -->
+                <nav class="space-y-1">
+                    <p class="text-[10px] font-bold tracking-widest text-slate-500 uppercase px-3 mb-2.5 font-mono">Data Sectors</p>
+                    <button onclick="setFilter('semua')" id="menu-semua" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition bg-[#111a2e] text-cyan-400 border border-cyan-950/40">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-cube w-4 text-center"></i>
+                            <span>All Sectors</span>
+                        </div>
+                        <span id="badge-semua" class="bg-cyan-950/80 text-cyan-400 border border-cyan-900/40 text-[10px] font-mono px-2 py-0.5 rounded-md">0</span>
+                    </button>
+                    <button onclick="setFilter('gambar')" id="menu-gambar" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-[#111a2e]/50 hover:text-slate-200">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-images w-4 text-center text-teal-400"></i>
+                            <span>Photos</span>
+                        </div>
+                        <span id="badge-gambar" class="bg-[#111a2e] text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded-md">0</span>
+                    </button>
+                    <button onclick="setFilter('video')" id="menu-video" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-[#111a2e]/50 hover:text-slate-200">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-clapperboard w-4 text-center text-purple-400"></i>
+                            <span>Videos</span>
+                        </div>
+                        <span id="badge-video" class="bg-[#111a2e] text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded-md">0</span>
+                    </button>
+                    <button onclick="setFilter('audio')" id="menu-audio" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-[#111a2e]/50 hover:text-slate-200">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-music w-4 text-center text-amber-400"></i>
+                            <span>Audio Playback</span>
+                        </div>
+                        <span id="badge-audio" class="bg-[#111a2e] text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded-md">0</span>
+                    </button>
+                    <button onclick="setFilter('lainnya')" id="menu-lainnya" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:bg-[#111a2e]/50 hover:text-slate-200">
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid fa-folder-tree w-4 text-center text-blue-400"></i>
+                            <span>Others (Files/HTML)</span>
+                        </div>
+                        <span id="badge-lainnya" class="bg-[#111a2e] text-slate-400 text-[10px] font-mono px-2 py-0.5 rounded-md">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Info Storage Desktop -->
+            <div class="bg-[#0c1322] border border-cyan-950/40 p-4 rounded-xl space-y-3 shadow-inner">
+                <div class="flex justify-between text-[11px] font-mono">
+                    <span class="text-slate-400">CORE MEMORY</span>
+                    <span id="storage-text-desktop" class="text-cyan-400 font-bold">0 B</span>
+                </div>
+                <div class="w-full bg-[#111a2e] h-1.5 rounded-full overflow-hidden">
+                    <div id="storage-progress-desktop" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- DASHBOARD HUB MAIN PANEL -->
+        <main class="flex-1 p-4 flex flex-col overflow-hidden bg-[#080c14] pb-32 sm:pb-4">
+            
+            <!-- Dynamic Action Header -->
+            <div class="flex flex-row justify-between items-center gap-2 mb-4 flex-shrink-0 bg-[#0c1322]/50 p-2.5 rounded-xl border border-cyan-950/20">
+                <div class="flex items-center space-x-1 sm:space-x-2 text-[11px] sm:text-xs font-mono truncate max-w-[50%]">
+                    <button onclick="pindahFolder(null)" class="text-slate-400 hover:text-cyan-400 transition font-bold flex items-center flex-shrink-0">
+                        <i class="fa-solid fa-terminal mr-1 text-cyan-500"></i> root
+                    </button>
+                    <span id="breadcrumbs-container" class="flex items-center space-x-1 text-slate-600 truncate"></span>
+                </div>
+
+                <div class="flex items-center space-x-1.5 text-[11px] font-bold">
+                    <button onclick="bukaModalFolder()" class="px-2.5 py-2 bg-[#111a2e] hover:bg-[#16223d] text-slate-200 rounded-xl border border-cyan-950/50 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-folder-plus text-cyan-400"></i>
+                        <span>+ Folder</span>
+                    </button>
+                    <button onclick="bukaWipeConfirmModal()" class="px-2.5 py-2 bg-red-950/20 hover:bg-red-900/80 text-red-400 hover:text-white rounded-xl border border-red-900/30 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-radiation"></i>
+                        <span>Wipe</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- INPUT FILE TERSEMBUNYI -->
+            <input type="file" id="main-file-input" class="hidden" multiple>
+
+            <!-- DRAG & DROP CANVAS GRID -->
+            <div id="drop-area" class="flex-1 border border-cyan-950/30 rounded-2xl p-3 flex flex-col overflow-hidden relative bg-[#090e17] shadow-inner">
+                <!-- Grid Tampilan Folder & File -->
+                <div id="items-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 overflow-y-auto pr-0.5 flex-1 align-content-start"></div>
+
+                <!-- Tampilan Default Jika Matrix Kosong -->
+                <div id="empty-view" class="hidden my-auto text-center py-12 text-slate-500">
+                    <div class="w-12 h-12 bg-[#0c1322] rounded-xl flex items-center justify-center mx-auto mb-3 border border-cyan-950/60 text-slate-600 shadow-inner">
+                        <i class="fa-solid fa-folder-closed text-lg"></i>
+                    </div>
+                    <h3 class="text-[11px] font-mono tracking-wider uppercase text-slate-400 font-bold">Sector Empty</h3>
+                </div>
+            </div>
+
+            <!-- FLOATING ACTION BUTTON MOBILE -->
+            <button id="btn-trigger-upload-mobile" class="sm:hidden fixed bottom-36 right-6 w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all duration-150 z-40 neon-pulse">
+                <i class="fa-solid fa-plus text-xl"></i>
+            </button>
+        </main>
+    </div>
+
+    <!-- BOTTOM CONTAINER MOBILE (Indikator Storage + Navigation Bar) -->
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-40 flex flex-col">
+        <!-- Live Storage Status Mobile -->
+        <div class="w-full bg-[#090e17] border-t border-cyan-950/60 px-4 py-2 flex flex-col space-y-1">
+            <div class="flex justify-between text-[10px] font-mono tracking-wide">
+                <span class="text-slate-400">STORAGE CAPACITY:</span>
+                <span id="storage-text-mobile" class="text-cyan-400 font-bold">0 B / 2 GB</span>
+            </div>
+            <div class="w-full bg-[#111a2e] h-1.5 rounded-full overflow-hidden">
+                <div id="storage-progress-mobile" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Menu Grid -->
+        <div class="h-20 glass-panel flex items-center justify-around px-2">
+            <button onclick="setFilterMobile('semua', this)" class="flex flex-col items-center justify-center space-y-1 text-cyan-400 filter-btn-mobile">
+                <i class="fa-solid fa-cube text-lg"></i>
+                <span class="text-[9px] font-bold font-mono">All</span>
+            </button>
+            <button onclick="setFilterMobile('gambar', this)" class="flex flex-col items-center justify-center space-y-1 text-slate-500 filter-btn-mobile">
+                <i class="fa-solid fa-images text-lg"></i>
+                <span class="text-[9px] font-bold font-mono">Photos</span>
+            </button>
+            <button onclick="setFilterMobile('video', this)" class="flex flex-col items-center justify-center space-y-1 text-slate-500 filter-btn-mobile">
+                <i class="fa-solid fa-clapperboard text-lg"></i>
+                <span class="text-[9px] font-bold font-mono">Videos</span>
+            </button>
+            <button onclick="setFilterMobile('audio', this)" class="flex flex-col items-center justify-center space-y-1 text-slate-500 filter-btn-mobile">
+                <i class="fa-solid fa-music text-lg"></i>
+                <span class="text-[9px] font-bold font-mono">Audio</span>
+            </button>
+            <button onclick="setFilterMobile('lainnya', this)" class="flex flex-col items-center justify-center space-y-1 text-slate-500 filter-btn-mobile">
+                <i class="fa-solid fa-folder-tree text-lg"></i>
+                <span class="text-[9px] font-bold font-mono">Other</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- POP-UP MENU ACTION DIALOG -->
+    <div id="action-popup-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-all duration-200 z-50 px-4">
+        <div id="action-popup-card" class="bg-[#0c1322] border border-cyan-500/30 w-full max-w-xs rounded-2xl p-5 shadow-2xl transform scale-95 transition-all duration-200 text-center">
+            <div id="popup-file-icon" class="w-14 h-14 bg-[#070c14] border border-cyan-950 rounded-xl mx-auto flex items-center justify-center text-2xl mb-3"></div>
+            <h4 id="popup-file-title" class="text-xs font-bold text-slate-200 truncate px-2 mb-1">File Name Matrix</h4>
+            <p id="popup-file-info" class="text-[10px] font-mono text-slate-500 mb-5">Ukuran & Tipe Berkas</p>
+            <div class="flex flex-col space-y-2">
+                <button id="popup-btn-open" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition">
+                    <i class="fa-solid fa-eye text-[11px]"></i> <span>Buka / Preview Berkas</span>
+                </button>
+                <button id="popup-btn-rename" class="w-full py-2.5 bg-amber-600/20 text-amber-400 border border-amber-500/30 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition">
+                    <i class="fa-solid fa-pen-to-square text-[11px]"></i> <span>Ganti Nama Berkas (Rename)</span>
+                </button>
+                <button id="popup-btn-download" class="w-full py-2.5 bg-[#111a2e] text-slate-200 border border-cyan-950/80 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition">
+                    <i class="fa-solid fa-download text-[11px] text-cyan-400"></i> <span>Download ke HP</span>
+                </button>
+                <button id="popup-btn-delete" class="w-full py-2.5 bg-red-950/30 text-red-400 border border-red-900/20 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 active:scale-95 transition">
+                    <i class="fa-solid fa-trash-can text-[11px]"></i> <span>Hapus Permanen</span>
+                </button>
+                <button onclick="tutupActionPopup()" class="w-full py-2 bg-slate-800 text-slate-400 text-xs rounded-xl transition">Kembali</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW MODAL PREMIUM NEW FOLDER -->
+    <div id="folder-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50 px-4">
+        <div class="bg-[#0c1322] border border-cyan-900/40 w-full max-w-sm rounded-2xl p-5 shadow-2xl transform scale-95 transition-all duration-300" id="modal-card">
+            <h3 class="text-xs font-mono tracking-wider uppercase font-bold text-cyan-400 mb-4"><i class="fa-solid fa-folder-plus mr-2"></i>Allocate Folder Node</h3>
+            <input type="text" id="folder-name-input" class="w-full bg-[#070c14] text-slate-200 text-xs font-mono rounded-xl px-4 py-3 border border-cyan-950/80 focus:outline-none focus:border-cyan-500 mb-5" placeholder="Nama folder node baru...">
+            <div class="flex justify-end space-x-2 text-xs font-bold">
+                <button onclick="tutupModalFolder()" class="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                <button onclick="eksekusiBuatFolder()" class="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW DIALOG MODAL RENAME BERKAS/FOLDER -->
+    <div id="rename-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50 px-4">
+        <div class="bg-[#0c1322] border border-amber-500/30 w-full max-w-sm rounded-2xl p-5 shadow-2xl transform scale-95 transition-all duration-300" id="rename-modal-card">
+            <h3 class="text-xs font-mono tracking-wider uppercase font-bold text-amber-400 mb-4"><i class="fa-solid fa-pen-to-square mr-2"></i>Rename Core Target</h3>
+            <input type="text" id="rename-name-input" class="w-full bg-[#070c14] text-slate-200 text-xs font-mono rounded-xl px-4 py-3 border border-cyan-950/80 focus:outline-none focus:border-amber-500 mb-5" placeholder="Masukkan nama baru...">
+            <div class="flex justify-end space-x-2 text-xs font-bold">
+                <button onclick="tutupModalRename()" class="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+                <button onclick="eksekusiRenameSistem()" class="px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl">Apply Name</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW MODAL DIALOG CONFIRM WIPE PREMIUM CYBERPUNK -->
+    <div id="wipe-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50 px-4">
+        <div class="bg-[#0c1322] border border-red-500/40 w-full max-w-sm rounded-2xl p-6 shadow-[0_0_35px_rgba(239,68,68,0.15)] transform scale-95 transition-all duration-300 text-center" id="wipe-modal-card">
+            <div class="w-14 h-14 bg-red-950/30 border border-red-800/40 rounded-2xl flex items-center justify-center mx-auto text-red-500 text-2xl mb-4 animate-pulse">
+                <i class="fa-solid fa-radiation"></i>
+            </div>
+            <h3 class="text-sm font-mono tracking-widest uppercase font-bold text-red-500 mb-2">SYSTEM WIPE PROTOCOL</h3>
+            <p class="text-xs text-slate-400 px-2 leading-relaxed mb-6">Apakah lu beneran yakin mau nge-wipe / menghapus seluruh isi data core memori Vortex Drive secara permanen, Ghathfan? Tindakan ini gak bisa dibatalkan.</p>
+            <div class="grid grid-cols-2 gap-3 text-xs font-bold">
+                <button onclick="tutupWipeConfirmModal()" class="w-full py-3 bg-slate-800 text-slate-300 rounded-xl active:scale-95 transition">Abort Mission</button>
+                <button onclick="eksekusiWipeTotalSistem()" class="w-full py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl shadow-lg shadow-red-950 active:scale-95 transition">Execute Wipe</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW MEDIA PREVIEW MODAL -->
+    <div id="preview-modal" class="fixed inset-0 preview-backdrop flex flex-col items-center justify-center opacity-0 pointer-events-none transition-all duration-300 z-50 p-4">
+        <div class="absolute top-4 right-4 flex space-x-3 z-50">
+            <button id="modal-download-btn" class="w-10 h-10 bg-slate-900/80 border border-slate-800 text-cyan-400 rounded-full flex items-center justify-center text-sm shadow-md active:scale-95 transition"><i class="fa-solid fa-download"></i></button>
+            <button onclick="tutupPreviewModal()" class="w-10 h-10 bg-slate-900/80 border border-slate-800 text-red-400 rounded-full flex items-center justify-center text-sm shadow-md active:scale-95 transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="w-full max-w-2xl flex flex-col items-center justify-center">
+            <img id="preview-img" class="max-h-[70vh] max-w-full object-contain rounded-xl hidden shadow-2xl animate-item" src="" alt="Vortex View">
+            <video id="preview-video" class="max-h-[70vh] w-full rounded-xl hidden shadow-2xl bg-black border border-cyan-950" controls></video>
+            <div id="preview-audio-container" class="w-full max-w-md bg-[#0c1322] border border-cyan-900/30 rounded-2xl p-6 hidden flex-col items-center shadow-2xl text-center animate-item">
+                <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-3xl mb-4 relative flex-shrink-0">
+                    <i class="fa-solid fa-compact-disc animate-spin" style="animation-duration: 4s;"></i>
+                </div>
+                <h4 id="preview-audio-title" class="text-sm font-bold text-slate-200 truncate w-full px-2">Audio Track Matrix</h4>
+                <p class="text-[10px] font-mono text-cyan-500 mt-0.5 tracking-widest uppercase">Audio Node Stream</p>
+                <audio id="preview-audio" class="w-full mt-5 accent-cyan-500" controls></audio>
+            </div>
+            <div id="preview-fallback" class="bg-[#0c1322] border border-cyan-950 p-6 rounded-2xl flex flex-col items-center hidden max-w-xs text-center">
+                <i class="fa-solid fa-file-invoice text-3xl text-blue-500 mb-2"></i>
+                <p id="preview-fallback-title" class="text-xs font-mono text-slate-300 truncate w-full"></p>
+                <p class="text-[10px] text-slate-500 mt-1">Sektor berkas ini aman tersimpan di storage offline.</p>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="hidden-video-canvas" class="hidden"></canvas>
+
+    <!-- ======================================================= -->
+    <!-- CORE ENGINE JAVASCRIPT & ANTI-BACK CLOSING MECHANISM    -->
+    <!-- ======================================================= -->
+    <script>
+        const DB_NAME = "VortexDriveDB_v7";
+        const DB_VERSION = 1;
+        let db;
+        
+        let folderSaatIni = null; 
+        let filterKategori = 'semua'; 
+        let kataKunciCari = '';
+        let blobUrlCache = [];
+        let targetItemPopup = null; 
+        let tipeTargetPopup = '';
+
+        const daftarPesanRandom = [
+            "Simpan file kamu nanti hilang loh🤣",
+            "Udah cek Vortex Drive hari ini? Data lo aman gak tuh? 👀",
+            "Jangan lupa backup, tar nangis kalau file memorinya ke-wipe 💀",
+            "Ada file rahasia yang belom lu amankan di enkripsi Vortex nih...",
+            "Sektor memori lu kesepian, butuh asupan file baru baru nih bro! 🚀"
+        ];
+
+        // SETUP DATABASE INDEXEDDB
+        const requestDB = indexedDB.open(DB_NAME, DB_VERSION);
+        requestDB.onerror = (e) => console.error("Database Error:", e.target.errorCode);
+        requestDB.onupgradeneeded = (e) => {
+            let database = e.target.result;
+            if (!database.objectStoreNames.contains("berkas")) database.createObjectStore("berkas", { keyPath: "id", autoIncrement: true });
+            if (!database.objectStoreNames.contains("folder")) database.createObjectStore("folder", { keyPath: "id", autoIncrement: true });
+        };
+        requestDB.onsuccess = (e) => { 
+            db = e.target.result; 
+            muatUlangSemuaData(); 
+            inisialisasiServiceWorkerMatiHidup();
+            inisialisasiAntiTombolBackKeluar(); // Aktifkan Proteksi Tombol Back HP
+        };
+
+        const gridItem = document.getElementById('items-grid');
+        const emptyView = document.getElementById('empty-view');
+        const mainFileInput = document.getElementById('main-file-input');
+        const btnUploadDesktop = document.getElementById('btn-trigger-upload-desktop');
+        const btnUploadMobile = document.getElementById('btn-trigger-upload-mobile');
+        
+        const folderModal = document.getElementById('folder-modal');
+        const modalCard = document.getElementById('modal-card');
+        const folderNameInput = document.getElementById('folder-name-input');
+        
+        const renameModal = document.getElementById('rename-modal');
+        const renameModalCard = document.getElementById('rename-modal-card');
+        const renameNameInput = document.getElementById('rename-name-input');
+
+        const wipeModal = document.getElementById('wipe-modal');
+        const wipeModalCard = document.getElementById('wipe-modal-card');
+        
+        const breadcrumbsContainer = document.getElementById('breadcrumbs-container');
+        
+        const actionPopupModal = document.getElementById('action-popup-modal');
+        const actionPopupCard = document.getElementById('action-popup-card');
+        const popupFileIcon = document.getElementById('popup-file-icon');
+        const popupFileTitle = document.getElementById('popup-file-title');
+        const popupFileInfo = document.getElementById('popup-file-info');
+        const popupBtnOpen = document.getElementById('popup-btn-open');
+        const popupBtnRename = document.getElementById('popup-btn-rename');
+        const popupBtnDownload = document.getElementById('popup-btn-download');
+        const popupBtnDelete = document.getElementById('popup-btn-delete');
+
+        const previewModal = document.getElementById('preview-modal');
+        const previewImg = document.getElementById('preview-img');
+        const previewVideo = document.getElementById('preview-video');
+        const previewAudioContainer = document.getElementById('preview-audio-container');
+        const previewAudio = document.getElementById('preview-audio');
+        const previewAudioTitle = document.getElementById('preview-audio-title');
+        const previewFallback = document.getElementById('preview-fallback');
+        const previewFallbackTitle = document.getElementById('preview-fallback-title');
+
+        if(btnUploadDesktop) btnUploadDesktop.addEventListener('click', () => mainFileInput.click());
+        if(btnUploadMobile) btnUploadMobile.addEventListener('click', () => mainFileInput.click());
+        mainFileInput.addEventListener('change', function() { simpanFileKeDB(this.files); });
+
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            kataKunciCari = e.target.value.toLowerCase().trim();
+            renderTampilanData();
+        });
+
+        // ==========================================
+        // SITEM PROTEKSI BACK NAVIGATION HP
+        // ==========================================
+        function inisialisasiAntiTombolBackKeluar() {
+            // Push state bayangan agar history browser terisi, mencegah tombol back langsung menutup app
+            window.history.pushState({ rute: "vortex_main" }, "");
+            
+            window.addEventListener('popstate', function(event) {
+                // Selalu injeksi ulang status baru agar tombol back berikutnya tetap terkunci
+                window.history.pushState({ rute: "vortex_main" }, "");
+
+                // Urutan logika penutupan elemen UI jika tombol back ditekan:
+                if (!previewModal.classList.contains('opacity-0')) {
+                    tutupPreviewModal();
+                } else if (!actionPopupModal.classList.contains('opacity-0')) {
+                    tutupActionPopup();
+                } else if (!folderModal.classList.contains('opacity-0')) {
+                    tutupModalFolder();
+                } else if (!renameModal.classList.contains('opacity-0')) {
+                    tutupModalRename();
+                } else if (!wipeModal.classList.contains('opacity-0')) {
+                    tutupWipeConfirmModal();
+                } else if (folderSaatIni !== null) {
+                    // Jika sedang di dalam subfolder, mundurkan ke root halaman utama
+                    pindahFolder(null);
+                } else {
+                    console.log("[Vortex Guard] Tombol Back diblokir demi mencegah ketidaksengajaan keluar.");
+                }
+            });
+        }
+
+        // ==========================================
+        // CORE PREMIUM MODAL WIPE CONTROLLER
+        // ==========================================
+        function bukaWipeConfirmModal() {
+            wipeModal.classList.remove('opacity-0', 'pointer-events-none');
+            wipeModalCard.classList.remove('scale-95');
+        }
+
+        function tutupWipeConfirmModal() {
+            wipeModal.classList.add('opacity-0', 'pointer-events-none');
+            wipeModalCard.classList.add('scale-95');
+        }
+
+        function eksekusiWipeTotalSistem() {
+            db.transaction(["berkas"], "readwrite").objectStore("berkas").clear();
+            db.transaction(["folder"], "readwrite").objectStore("folder").clear().onsuccess = () => { 
+                folderSaatIni = null; 
+                tutupWipeConfirmModal();
+                muatUlangSemuaData(); 
+            };
+        }
+
+        // ==========================================
+        // ENGINE NOTIFIKASI BACKGROUND PUSH SYSTEM
+        // ==========================================
+        function mintaIzinNotifikasiSistem() {
+            if (!("Notification" in window)) return;
+            Notification.requestPermission().then(permission => {
+                const el = document.getElementById('btn-noti-status'); if(!el) return;
+                if (permission === "granted") {
+                    el.className = "w-8 h-8 bg-cyan-950/50 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition";
+                    jadwalkanNotifikasiLatarBelakang();
+                } else {
+                    el.className = "w-8 h-8 bg-red-950/30 text-red-400 border border-red-900/20 rounded-xl flex items-center justify-center transition";
+                }
+            });
+        }
+
+        function jadwalkanNotifikasiLatarBelakang() {
+            if (Notification.permission !== "granted") return;
+            const rentangWaktuJam = (Math.random() * (6 - 3) + 3) * 60 * 60 * 1000; 
+            setTimeout(() => {
+                const indeksAcak = Math.floor(Math.random() * daftarPesanRandom.length);
+                const pesanTerpilih = daftarPesanRandom[indeksAcak];
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification("Vortex Drive Security", {
+                            body: pesanTerpilih,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/2061/2061159.png',
+                            badge: 'https://cdn-icons-png.flaticon.com/512/2061/2061159.png',
+                            tag: 'vortex-lazy-reminder',
+                            data: { url: window.location.href }
+                        });
+                    });
+                } else {
+                    new Notification("Vortex Drive Security", { body: pesanTerpilih, icon: 'https://cdn-icons-png.flaticon.com/512/2061/2061159.png' });
+                }
+                jadwalkanNotifikasiLatarBelakang();
+            }, rentangWaktuJam);
+        }
+
+        function inisialisasiServiceWorkerMatiHidup() {
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('notificationclick', function(event) {
+                        event.notification.close();
+                        event.waitUntil(
+                            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+                                if (clientList.length > 0) { let client = clientList[0]; if ('focus' in client) return client.focus(); }
+                                if (clients.openWindow) return clients.openWindow(event.notification.data ? event.notification.data.url : '/');
+                            })
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).then(() => {
+                    if (Notification.permission === "granted") jadwalkanNotifikasiLatarBelakang();
+                }).catch(err => console.log("Service Worker Batal:", err));
+            }
+        }
+
+        // ==========================================
+        // STORAGE AND RENDER SYSTEM (FIXED AUDIO ICON)
+        // ==========================================
+        function simpanFileKeDB(files) {
+            if (files.length === 0) return;
+            let count = files.length;
+            for(let i=0; i<files.length; i++) {
+                const file = files[i]; const reader = new FileReader();
+                reader.onload = function(e) {
+                    const dataBaru = {
+                        nama: file.name,
+                        tipe: file.type || 'application/octet-stream',
+                        ukuran: file.size,
+                        indukFolder: folderSaatIni,
+                        tanggal: new Date().toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}),
+                        konten: e.target.result
+                    };
+                    db.transaction(["berkas"], "readwrite").objectStore("berkas").add(dataBaru).onsuccess = () => {
+                        if(i === count - 1) muatUlangSemuaData();
+                    };
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        let seluruhFilePenyimpanan = [];
+        let seluruhFolderPenyimpanan = [];
+
+        function muatUlangSemuaData() {
+            db.transaction(["berkas"], "readonly").objectStore("berkas").getAll().onsuccess = (e) => {
+                seluruhFilePenyimpanan = e.target.result;
+                db.transaction(["folder"], "readonly").objectStore("folder").getAll().onsuccess = (ev) => {
+                    seluruhFolderPenyimpanan = ev.target.result;
+                    hitungKalkulasiStatistik(); renderTampilanData(); updateBreadcrumbs();
+                    const el = document.getElementById('btn-noti-status'); if(!el) return;
+                    if(Notification.permission === "granted") el.className = "w-8 h-8 bg-cyan-950/50 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center transition";
+                };
+            };
+        }
+
+        function bersihkanCacheBlobUrl() { blobUrlCache.forEach(url => URL.revokeObjectURL(url)); blobUrlCache = []; }
+
+        function renderTampilanData() {
+            bersihkanCacheBlobUrl(); gridItem.innerHTML = '';
+            let folderTerfilter = [];
+            if (filterKategori === 'semua' && kataKunciCari === '') folderTerfilter = seluruhFolderPenyimpanan.filter(f => f.indukFolder === folderSaatIni);
+
+            let fileTerfilter = seluruhFilePenyimpanan;
+            if (kataKunciCari !== '') fileTerfilter = fileTerfilter.filter(f => f.nama.toLowerCase().includes(kataKunciCari));
+            else {
+                fileTerfilter = fileTerfilter.filter(f => f.indukFolder === folderSaatIni);
+                if (filterKategori !== 'semua') fileTerfilter = fileTerfilter.filter(f => deteksiKategoriFile(f.tipe, f.nama) === filterKategori);
+            }
+
+            if (folderTerfilter.length === 0 && fileTerfilter.length === 0) { emptyView.classList.remove('hidden'); return; }
+            else emptyView.classList.add('hidden');
+
+            folderTerfilter.forEach(folder => {
+                const card = document.createElement('div');
+                card.className = "bg-[#0c1322] p-3.5 rounded-xl border border-cyan-950/40 flex flex-col items-center text-center justify-center group relative cursor-pointer hover:border-cyan-500/50 transition duration-200 select-none animate-item shadow-sm";
+                card.onclick = () => bukaActionPopup(folder.id, 'folder');
+                card.innerHTML = `
+                    <div class="text-3xl text-cyan-500/80 mb-1.5 drop-shadow-[0_0_8px_rgba(6,182,212,0.2)]"><i class="fa-solid fa-folder"></i></div>
+                    <p class="text-[11px] font-bold text-slate-300 truncate w-full px-1">${folder.nama}</p>
+                `;
+                gridItem.appendChild(card);
+            });
+
+            fileTerfilter.forEach(file => {
+                const kat = deteksiKategoriFile(file.tipe, file.nama);
+                const card = document.createElement('div');
+                card.className = "bg-[#0c1322] p-2.5 rounded-xl border border-cyan-950/40 flex flex-col items-center text-center justify-between group relative cursor-pointer hover:border-cyan-500/40 transition duration-200 select-none animate-item shadow-sm";
+                card.onclick = () => bukaActionPopup(file.id, 'file');
+
+                const idVisualContainer = `visual-render-${file.id}`;
+                card.innerHTML = `
+                    <div class="w-full flex flex-col items-center overflow-hidden flex-shrink-0">
+                        <div id="${idVisualContainer}" class="w-full h-20 sm:h-24 rounded-lg mb-1.5 border border-cyan-950/10 bg-[#070c14]/40 flex items-center justify-center text-2xl text-slate-600">
+                            <i class="fa-solid fa-circle-notch animate-spin text-xs text-cyan-500"></i>
+                        </div>
+                        <p class="text-[11px] font-semibold text-slate-300 truncate w-full px-1" title="${file.nama}">${file.nama}</p>
+                        <p class="text-[9px] font-mono text-slate-500 mt-0.5">${formatSatuanByte(file.ukuran)}</p>
+                    </div>
+                `;
+                gridItem.appendChild(card);
+
+                setTimeout(() => {
+                    const container = document.getElementById(idVisualContainer); if (!container) return;
+                    const blob = new Blob([file.konten], { type: file.tipe }); const urlMedia = URL.createObjectURL(blob);
+                    blobUrlCache.push(urlMedia);
+
+                    if (kat === 'gambar') {
+                        container.innerHTML = `<img src="${urlMedia}" class="w-full h-full object-cover rounded-lg" alt="img">`;
+                        container.className = "w-full h-20 sm:h-24 rounded-lg mb-1.5 border border-cyan-950/30 bg-[#070c14] flex items-center justify-center overflow-hidden";
+                    } else if (kat === 'video') {
+                        const vTemp = document.createElement('video'); vTemp.src = urlMedia; vTemp.muted = true; vTemp.currentTime = 1;
+                        vTemp.onseeked = () => {
+                            try {
+                                const canvas = document.getElementById('hidden-video-canvas'); canvas.width = 160; canvas.height = 100;
+                                canvas.getContext('2d').drawImage(vTemp, 0, 0, canvas.width, canvas.height);
+                                container.innerHTML = `<div class="relative w-full h-full overflow-hidden rounded-lg"><img src="${canvas.toDataURL()}" class="w-full h-full object-cover" alt="vid"><div class="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-xs"><i class="fa-solid fa-play bg-cyan-600/80 p-1.5 rounded-full text-[9px]"></i></div></div>`;
+                            } catch (e) { container.innerHTML = `<div class="text-purple-400"><i class="fa-solid fa-film"></i></div>`; }
+                        };
+                    } else if (kat === 'audio') {
+                        // FIX: Visual rendering audio icon sekarang memuat gelombang waveform premium lengkap
+                        container.innerHTML = `
+                            <div class="w-full h-full bg-gradient-to-br from-[#0f192b] to-[#060a12] flex flex-col items-center justify-center rounded-lg border border-amber-500/20 relative overflow-hidden">
+                                <div class="text-amber-400 text-lg relative z-10 opacity-90"><i class="fa-solid fa-music"></i></div>
+                                <div class="flex items-center space-x-0.5 mt-1.5 relative z-10">
+                                    <span class="w-0.5 h-2 bg-amber-500/70 rounded-full"></span>
+                                    <span class="w-0.5 h-3.5 bg-amber-400 rounded-full"></span>
+                                    <span class="w-0.5 h-1.5 bg-amber-500/60 rounded-full"></span>
+                                    <span class="w-0.5 h-4 bg-amber-400 rounded-full animate-pulse"></span>
+                                    <span class="w-0.5 h-2.5 bg-amber-500/80 rounded-full"></span>
+                                </div>
+                            </div>`;
+                        container.className = "w-full h-20 sm:h-24 rounded-lg mb-1.5 overflow-hidden";
+                    } else {
+                        let fileExtIcon = 'fa-solid fa-file-invoice'; let extColor = 'text-blue-400';
+                        if(file.nama.endsWith('.html') || file.nama.endsWith('.htm')) { fileExtIcon = 'fa-brands fa-html5'; extColor = 'text-orange-500'; }
+                        else if(file.nama.endsWith('.zip') || file.nama.endsWith('.rar')) { fileExtIcon = 'fa-solid fa-file-zipper'; extColor = 'text-amber-500'; }
+                        else if(file.nama.endsWith('.js')) { fileExtIcon = 'fa-brands fa-js'; extColor = 'text-yellow-400'; }
+                        container.innerHTML = `<div class="w-full h-full bg-[#0a0f1b] flex flex-col items-center justify-center rounded-lg border border-slate-800"><i class="${fileExtIcon} ${extColor} text-xl"></i></div>`;
+                    }
+                }, 5);
+            });
+        }
+
+        // ==========================================
+        // ACTION POPUP WINDOW SYSTEM
+        // ==========================================
+        function bukaActionPopup(id, tipe) {
+            targetItemPopup = id; tipeTargetPopup = tipe;
+            if (tipe === 'folder') {
+                const folder = seluruhFolderPenyimpanan.find(f => f.id === id); if(!folder) return;
+                popupFileIcon.innerHTML = `<i class="fa-solid fa-folder text-cyan-400"></i>`;
+                popupFileTitle.innerText = folder.nama; popupFileInfo.innerText = "Folder Node Sektor";
+                popupBtnOpen.innerHTML = `<i class="fa-solid fa-folder-open"></i> <span>Masuk ke Folder</span>`;
+                popupBtnDownload.classList.add('hidden');
+            } else {
+                const file = seluruhFilePenyimpanan.find(f => f.id === id); if(!file) return;
+                popupFileIcon.innerHTML = `<i class="fa-solid fa-file text-blue-400"></i>`;
+                popupFileTitle.innerText = file.nama; popupFileInfo.innerText = `${formatSatuanByte(file.ukuran)} | ${file.tanggal}`;
+                popupBtnOpen.innerHTML = `<i class="fa-solid fa-eye"></i> <span>Buka / Preview Berkas</span>`;
+                popupBtnDownload.classList.remove('hidden');
+            }
+            actionPopupModal.classList.remove('opacity-0', 'pointer-events-none');
+            actionPopupCard.classList.add('animate-popup');
+        }
+
+        function tutupActionPopup() {
+            actionPopupModal.classList.add('opacity-0', 'pointer-events-none');
+            actionPopupCard.classList.remove('animate-popup');
+        }
+
+        popupBtnOpen.onclick = () => {
+            const targetId = targetItemPopup; const tipe = tipeTargetPopup; tutupActionPopup();
+            if (tipe === 'folder') pindahFolder(targetId); else bukaPreviewModal(targetId);
+        };
+
+        popupBtnRename.onclick = () => { tutupActionPopup(); bukaModalRename(); };
+
+        popupBtnDownload.onclick = () => {
+            if(tipeTargetPopup === 'file') downloadFileSistem(targetItemPopup);
+            tutupActionPopup();
+        };
+
+        popupBtnDelete.onclick = () => {
+            const targetId = targetItemPopup; const tipe = tipeTargetPopup; tutupActionPopup();
+            if (tipe === 'folder') hapusFolderDariSistem(targetId); else hapusFileSistem(targetId);
+        };
+
+        // ==========================================
+        // RENAME PROTOCOL SYSTEM
+        // ==========================================
+        function bukaModalRename() {
+            let namaAwal = "";
+            if(tipeTargetPopup === 'folder') {
+                const folder = seluruhFolderPenyimpanan.find(f => f.id === targetItemPopup); if(folder) namaAwal = folder.nama;
+            } else {
+                const file = seluruhFilePenyimpanan.find(f => f.id === targetItemPopup); if(file) namaAwal = file.nama;
+            }
+            renameNameInput.value = namaAwal;
+            renameModal.classList.remove('opacity-0', 'pointer-events-none');
+            renameModalCard.classList.remove('scale-95');
+            renameNameInput.focus();
+        }
+
+        function tutupModalRename() {
+            renameModal.classList.add('opacity-0', 'pointer-events-none');
+            renameModalCard.classList.add('scale-95');
+            renameNameInput.value = '';
+        }
+
+        function eksekusiRenameSistem() {
+            const namaBaru = renameNameInput.value.trim(); if(!namaBaru || !targetItemPopup) return;
+            if(tipeTargetPopup === 'folder') {
+                const store = db.transaction(["folder"], "readwrite").objectStore("folder");
+                store.get(targetItemPopup).onsuccess = (e) => {
+                    const data = e.target.result; if(!data) return; data.nama = namaBaru;
+                    store.put(data).onsuccess = () => { tutupModalRename(); muatUlangSemuaData(); };
+                };
+            } else {
+                const store = db.transaction(["berkas"], "readwrite").objectStore("berkas");
+                store.get(targetItemPopup).onsuccess = (e) => {
+                    const data = e.target.result; if(!data) return; data.nama = namaBaru;
+                    const dataNamaKecil = namaBaru.toLowerCase();
+                    if (dataNamaKecil.endsWith('.png') || dataNamaKecil.endsWith('.jpg') || dataNamaKecil.endsWith('.jpeg') || dataNamaKecil.endsWith('.webp')) data.tipe = "image/png";
+                    else if (dataNamaKecil.endsWith('.mp4') || dataNamaKecil.endsWith('.mkv') || dataNamaKecil.endsWith('.webm')) data.tipe = "video/mp4";
+                    else if (dataNamaKecil.endsWith('.mp3') || dataNamaKecil.endsWith('.wav')) data.tipe = "audio/mp3";
+                    store.put(data).onsuccess = () => { tutupModalRename(); muatUlangSemuaData(); };
+                };
+            }
+        }
+
+        function deteksiKategoriFile(tipe, nama) {
+            const n = nama.toLowerCase();
+            if (tipe.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg|ico)$/.test(n)) return 'gambar';
+            if (tipe.startsWith('video/') || /\.(mp4|mkv|avi|mov|webm|flv)$/.test(n)) return 'video';
+            if (tipe.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/.test(n)) return 'audio';
+            return 'lainnya';
+        }
+
+        function bukaPreviewModal(idFile) {
+            const tx = db.transaction(["berkas"], "readonly");
+            tx.objectStore("berkas").get(idFile).onsuccess = (e) => {
+                const rec = e.target.result; if (!rec) return;
+                previewImg.classList.add('hidden'); previewVideo.classList.add('hidden'); previewAudioContainer.classList.add('hidden'); previewFallback.classList.add('hidden');
+                const blob = new Blob([rec.konten], { type: rec.tipe }); const urlObj = URL.createObjectURL(blob);
+                const kat = deteksiKategoriFile(rec.tipe, rec.nama);
+                if (kat === 'gambar') { previewImg.src = urlObj; previewImg.classList.remove('hidden'); } 
+                else if (kat === 'video') { previewVideo.src = urlObj; previewVideo.classList.remove('hidden'); previewVideo.play(); } 
+                else if (kat === 'audio') { previewAudio.src = urlObj; previewAudioTitle.innerText = rec.nama; previewAudioContainer.classList.remove('hidden'); previewAudio.play(); } 
+                else { previewFallbackTitle.innerText = rec.nama; previewFallback.classList.remove('hidden'); }
+                previewModal.classList.remove('opacity-0', 'pointer-events-none');
+            };
+        }
+
+        function tutupPreviewModal() {
+            previewModal.classList.add('opacity-0', 'pointer-events-none');
+            previewVideo.pause(); previewVideo.src = ''; previewAudio.pause(); previewAudio.src = '';
+        }
+
+        function downloadFileSistem(id) {
+            db.transaction(["berkas"], "readonly").objectStore("berkas").get(id).onsuccess = (e) => {
+                const rec = e.target.result; if (!rec) return;
+                const blob = new Blob([rec.konten], { type: rec.tipe }); const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = rec.nama;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            };
+        }
+
+        function pindahFolder(idFolder) { folderSaatIni = idFolder; muatUlangSemuaData(); }
+
+        function updateBreadcrumbs() {
+            breadcrumbsContainer.innerHTML = ''; if (folderSaatIni === null) return;
+            let path = []; let curr = folderSaatIni;
+            while(curr !== null) {
+                const f = seluruhFolderPenyimpanan.find(node => node.id === curr); if(f) { path.unshift(f); curr = f.indukFolder; } else break;
+            }
+            path.forEach((f, idx) => {
+                const s = document.createElement('span'); s.innerHTML = '<i class="fa-solid fa-angle-right text-[8px] text-slate-600"></i>';
+                breadcrumbsContainer.appendChild(s);
+                const b = document.createElement('button'); b.className = `font-bold ${idx === path.length - 1 ? 'text-cyan-400':'text-slate-400'}`;
+                b.innerText = f.nama; b.onclick = () => pindahFolder(f.id);
+                breadcrumbsContainer.appendChild(b);
+            });
+        }
+
+        function hitungKalkulasiStatistik() {
+            let totalByte = 0; seluruhFilePenyimpanan.forEach(f => totalByte += f.ukuran);
+            const strStr = formatSatuanByte(totalByte); const pct = (totalByte / (2 * 1024 * 1024 * 1024)) * 100;
+            if(document.getElementById('storage-text-desktop')) {
+                document.getElementById('storage-text-desktop').innerText = strStr;
+                document.getElementById('storage-progress-desktop').style.width = `${Math.max(1, pct)}%`;
+            }
+            document.getElementById('storage-text-mobile').innerText = `${strStr} / 2 GB`;
+            document.getElementById('storage-progress-mobile').style.width = `${Math.max(1, pct)}%`;
+            if(document.getElementById('badge-semua')) {
+                document.getElementById('badge-semua').innerText = seluruhFilePenyimpanan.length;
+                document.getElementById('badge-gambar').innerText = seluruhFilePenyimpanan.filter(f=>deteksiKategoriFile(f.tipe, f.nama) === 'gambar').length;
+                document.getElementById('badge-video').innerText = seluruhFilePenyimpanan.filter(f=>deteksiKategoriFile(f.tipe, f.nama) === 'video').length;
+                document.getElementById('badge-audio').innerText = seluruhFilePenyimpanan.filter(f=>deteksiKategoriFile(f.tipe, f.nama) === 'audio').length;
+                document.getElementById('badge-lainnya').innerText = seluruhFilePenyimpanan.filter(f=>deteksiKategoriFile(f.tipe, f.nama) === 'lainnya').length;
+            }
+        }
+
+        function setFilter(kat) { filterKategori = kat; renderTampilanData(); }
+        function setFilterMobile(kat, el) {
+            filterKategori = kat;
+            document.querySelectorAll('.filter-btn-mobile').forEach(b => { b.classList.remove('text-cyan-400'); b.classList.add('text-slate-500'); });
+            el.classList.remove('text-slate-500'); el.classList.add('text-cyan-400'); renderTampilanData();
+        }
+
+        function bukaModalFolder() { folderModal.classList.remove('opacity-0', 'pointer-events-none'); modalCard.classList.remove('scale-95'); folderNameInput.focus(); }
+        function tutupModalFolder() { folderModal.classList.add('opacity-0', 'pointer-events-none'); modalCard.classList.add('scale-95'); folderNameInput.value = ''; }
+        function eksekusiBuatFolder() {
+            const n = folderNameInput.value.trim(); if (!n) return;
+            db.transaction(["folder"], "readwrite").objectStore("folder").add({ nama: n, indukFolder: folderSaatIni }).onsuccess = () => { tutupModalFolder(); muatUlangSemuaData(); };
+        }
+
+        function hapusFileSistem(id) { 
+            if(confirm("Hapus berkas?")) { db.transaction(["berkas"], "readwrite").objectStore("berkas").delete(id).onsuccess = () => { muatUlangSemuaData(); }; }
+        }
+        
+        function hapusFolderDariSistem(id) {
+            if(confirm("Hapus folder beserta isinya?")) {
+                db.transaction(["folder"], "readwrite").objectStore("folder").delete(id).onsuccess = () => {
+                    const tx = db.transaction(["berkas"], "readwrite");
+                    seluruhFilePenyimpanan.forEach(f => { if(f.indukFolder === id) tx.objectStore("berkas").delete(f.id); });
+                    muatUlangSemuaData();
+                };
+            }
+        }
+
+        function formatSatuanByte(b) {
+            if (b === 0) return '0 B'; const k = 1024; const u = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(b) / Math.log(k));
+            return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + u[i];
+        }
+    </script>
+</body>
+</html>
